@@ -17,32 +17,50 @@
 </template>
 
 <script lang="ts">
-import { loadOhMyLive2D } from '../plugins/live2d';
-import messageData from './xiao.json'
-loadOhMyLive2D({
-    source: './',
-    models: {
-        path: '/xiao/xiao.model3.json',
-        scale: 0.8,
-        x: 33,
-        stageStyle: {
-            width: 250
-        }
+let character = Number(window.character)
+console.log(character)
+let messageData, timeData, mouseData, keyboardData, applicationData, expressionData
+let config = [
+    {
+        model: {
+            source: './',
+            models: {
+                path: '/xiao/xiao.model3.json',
+                scale: 0.8,
+                x: 33,
+                stageStyle: {
+                    width: 250
+                }
+            },
+            tips: false
+        },
+        name: 'xiao',
+    }, {
+        model: {
+            source: './',
+            models: {
+                path: '/fengyuanwanye/fengyuanwanye.model3.json',
+                scale: 2,
+                x: 0,
+                y: -130,
+                stageStyle: {
+                    width: 250
+                }
+            },
+            tips: false
+        },
+        name: 'wanye'
+    }
+]
 
-    },
-    tips: false
-})
+import { loadOhMyLive2D } from '../plugins/live2d';
+loadOhMyLive2D(config[character].model)
 window.electron.ipcRenderer.on('mouse-move', (_sender, arg) => {
     (window.hijackedMouse == null) || window.hijackedMouse.onPointerMove(new MouseEvent('mousemove', {
         clientX: arg.x,
         clientY: arg.y
     }))
 })
-let timeData = messageData.time
-let mouseData = messageData.mouse
-let keyboardData = messageData.keyboard
-let applicationData = messageData.application
-let expressionData = messageData.expression
 
 export default {
     data() {
@@ -62,7 +80,14 @@ export default {
             expressionMessage: '',
         }
     },
-    mounted() {
+    async mounted() {
+        messageData = await import(`./message/${config[character].name}.json`)
+        timeData = messageData.time
+        mouseData = messageData.mouse
+        keyboardData = messageData.keyboard
+        applicationData = messageData.application
+        expressionData = messageData.expression
+        console.log(window.character)
         window.electron.ipcRenderer.on('show-drag', () => {
             this.show = true
         })
@@ -148,8 +173,9 @@ export default {
             })
         })
         setInterval(() => {
-            let random = Math.floor(Math.random() * 5)
-            if (random == 4) window.hijackedMode.resetExpression();
+            const length = expressionData.length
+            let random = Math.floor(Math.random() * length)
+            if (random == length - 1) window.hijackedMode.resetExpression();
             else window.hijackedMode.expression(random);
             this.expressionMessage = expressionData[random].messages[Math.floor(Math.random() * expressionData[random].messages.length)]
             setTimeout(() => {

@@ -9,5 +9,6 @@ declare global {
     interface Window {
         hijackedMode: any,
         hijackedMouse: any,
+        character: number
     }
 }

