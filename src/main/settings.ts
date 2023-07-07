@@ -19,6 +19,14 @@ class settingsManager {
     setCharacter(character: number): void {
         this.db.set('character', character);
     }
+
+    getScale(): string {
+        return this.db.get('scale') || 'normal';
+    }
+
+    setScale(scale: "large" | "small" | "normal"): void {
+        this.db.set('scale', scale);
+    }
 }
 
 export default settingsManager;

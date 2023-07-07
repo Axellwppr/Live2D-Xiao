@@ -1,0 +1,12 @@
+{
+	"Type": "Live2D Expression",
+	"FadeInTime": 0.4,
+	"FadeOutTime": 0.4,
+	"Parameters": [
+		{
+			"Id": "ParamBodyAngleY",
+			"Value": 10,
+			"Blend": "Add"
+		}
+	]
+}

@@ -25,6 +25,14 @@
 			{
 				"Name": "shangqi",
 				"File": "expressions/shangqi.exp3.json"
+			},
+			{
+				"Name": "move",
+				"File": "expressions/move.exp3.json"
+			},
+			{
+				"Name": "move2",
+				"File": "expressions/move2.exp3.json"
 			}
 		]
 	},

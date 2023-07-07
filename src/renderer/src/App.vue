@@ -17,8 +17,10 @@
 </template>
 
 <script lang="ts">
+// 获得当前选择的角色
 let character = Number(window.character)
-console.log(character)
+// console.log(character)
+// 加载角色配置
 let messageData, timeData, mouseData, keyboardData, applicationData, expressionData
 let config = [
     {
@@ -53,6 +55,7 @@ let config = [
     }
 ]
 
+// 加载模型
 import { loadOhMyLive2D } from '../plugins/live2d';
 loadOhMyLive2D(config[character].model)
 window.electron.ipcRenderer.on('mouse-move', (_sender, arg) => {
@@ -81,21 +84,34 @@ export default {
         }
     },
     async mounted() {
+        let index = 0
+        setInterval(() => {
+            let result;
+            if (index == 0) result = window.hijackedMode.expression(4);
+            else result = window.hijackedMode.expression(5);
+            index = (index + 1) % 2;
+            console.log(result);
+        }, 500)
         messageData = await import(`./message/${config[character].name}.json`)
         timeData = messageData.time
         mouseData = messageData.mouse
         keyboardData = messageData.keyboard
         applicationData = messageData.application
         expressionData = messageData.expression
-        console.log(window.character)
+
+        // 移动按钮显示
         window.electron.ipcRenderer.on('show-drag', () => {
             this.show = true
         })
         window.electron.ipcRenderer.on('hide-drag', () => {
             this.show = false
         })
+
+        // 定时消息显示
         this.getTimeMessage();
         setInterval(this.getTimeMessage, 10 * 60 * 1000);
+
+        // 鼠标消息显示
         window.electron.ipcRenderer.on('mouse-status', (_sender, arg) => {
             if (this.mouseTime != -1) {
                 clearTimeout(this.mouseTime)
@@ -126,6 +142,8 @@ export default {
                 }
             })
         })
+
+        // 键盘消息显示
         window.electron.ipcRenderer.on('keyboard-status', (_sender, arg) => {
             if (this.keyboardTime != -1) {
                 clearTimeout(this.keyboardTime)
@@ -155,6 +173,8 @@ export default {
                 }
             })
         })
+
+        // 应用消息显示
         window.electron.ipcRenderer.on('application-status', (_sender, arg) => {
             if (arg == this.lastApplicationStatus) return
             this.lastApplicationStatus = arg
@@ -172,6 +192,8 @@ export default {
                 }
             })
         })
+
+        // 定时姿态切换
         setInterval(() => {
             const length = expressionData.length
             let random = Math.floor(Math.random() * length)

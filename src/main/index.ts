@@ -167,7 +167,7 @@ class ApplicationMonitor extends EventEmitter {
     }
 }
 
-var setAutoLaunch = (val) => {
+const setAutoLaunch = (val) => {
     const ex = process.execPath;
     app.setLoginItemSettings({
         openAtLogin: val,
@@ -176,11 +176,37 @@ var setAutoLaunch = (val) => {
     });
 }
 
+const getFactor = () => {
+    let scale = settings.getScale()
+    let factor = 1.0
+    switch (scale) {
+        case "large":
+            factor = 1.2;
+            break;
+        case "small":
+            factor = 0.8;
+            break;
+        default:
+            break;
+    }
+    return factor
+}
+
+const getWH = () => {
+    let width = 250, height = 400;
+    let factor = getFactor()
+    width *= factor
+    height *= factor
+    return { width, height }
+}
+
 function createWindow(): void {
     // Create the browser window.
+    let { width, height } = getWH()
+    let factor = getFactor()
     mainWindow = new BrowserWindow({
-        width: 250,
-        height: 400,
+        width: width,
+        height: height,
         show: false,
         autoHideMenuBar: true,
         transparent: true,
@@ -197,7 +223,9 @@ function createWindow(): void {
             sandbox: false
         }
     })
-
+    mainWindow.setMenu(null);
+    mainWindow.setMenuBarVisibility(false);
+    mainWindow.webContents.setZoomFactor(factor);
     mainWindow.on('ready-to-show', () => {
         mainWindow.setIgnoreMouseEvents(true, { forward: true })
         mainWindow.show()
@@ -250,7 +278,8 @@ function createWindow(): void {
                 window_x = Math.round((mouse_x - cache[0]) / scaleFactor + cache[2])
                 window_y = Math.round((mouse_y - cache[1]) / scaleFactor + cache[3])
                 // console.log((mouse_x - cache[0]) / scaleFactor + cache[2], (mouse_y - cache[1]) / scaleFactor + cache[3])
-                mainWindow.setBounds({ x: window_x, y: window_y, width: 250, height: 400 })
+                let { width, height } = getWH()
+                mainWindow.setBounds({ x: window_x, y: window_y, width, height })
             } catch (e) {
                 console.log(e)
             }
@@ -314,7 +343,7 @@ function createWindow(): void {
 async function createTray() {
     let tray = new Tray(nativeImage.createFromPath(appIcon));
     tray.setToolTip('屏幕挂件');
-    let currentCharacter = await settings.getCharacter()
+    let currentCharacter = settings.getCharacter()
     const table = [
         "魈", "万叶"
     ]
@@ -334,16 +363,41 @@ async function createTray() {
         })
     })
 
+    let currentSize = settings.getScale()
+    const changeScale = (scale) => {
+        let currentScale = settings.getScale()
+        if (scale === currentScale) return
+        settings.setScale(scale)
+        currentSize = scale
+        let factor = getFactor()
+        let { width, height } = getWH()
+        mainWindow.setBounds({ width, height })
+        mainWindow.webContents.setZoomFactor(factor);
+    }
+    let sizeContext = [] as any
+    ([{ label: '较大', scale: 'large' }, { label: '正常', scale: 'normal' }, { label: '较小', scale: 'small' }]).forEach(item => {
+        sizeContext.push({
+            label: item.label,
+            click: () => {
+                changeScale(item.scale)
+            },
+            type: 'radio',
+            checked: currentSize === item.scale
+        })
+    })
     const contextMenu = Menu.buildFromTemplate([{
         label: '退出',
         click() {
+            iohook.stop();
             app.quit();
         }
     }, {
         label: '角色选择',
         submenu: context
-    }
-    ])
+    }, {
+        label: '调节大小',
+        submenu: sizeContext
+    }])
     tray.setContextMenu(contextMenu)
 }
 
