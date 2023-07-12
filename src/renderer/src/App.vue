@@ -21,7 +21,7 @@
 let character = Number(window.character)
 // console.log(character)
 // 加载角色配置
-let messageData, timeData, mouseData, keyboardData, applicationData, expressionData
+let messageData, timeData, mouseData, keyboardData, applicationData, expressionData, enableWalking
 let config = [
     {
         model: {
@@ -81,23 +81,20 @@ export default {
             lastApplicationStatus: '',
             applicationTime: -1 as any,
             expressionMessage: '',
+            isWalking: false,
+            walkTime: -1 as any,
+            walkDirection: 2,
+            walkSteps: 0,
         }
     },
     async mounted() {
-        let index = 0
-        setInterval(() => {
-            let result;
-            if (index == 0) result = window.hijackedMode.expression(4);
-            else result = window.hijackedMode.expression(5);
-            index = (index + 1) % 2;
-            console.log(result);
-        }, 500)
         messageData = await import(`./message/${config[character].name}.json`)
         timeData = messageData.time
         mouseData = messageData.mouse
         keyboardData = messageData.keyboard
         applicationData = messageData.application
         expressionData = messageData.expression
+        enableWalking = messageData.walking
 
         // 移动按钮显示
         window.electron.ipcRenderer.on('show-drag', () => {
@@ -115,6 +112,7 @@ export default {
         window.electron.ipcRenderer.on('mouse-status', (_sender, arg) => {
             if (this.mouseTime != -1) {
                 clearTimeout(this.mouseTime)
+                this.mouseTime = -1
             }
 
             this.mouseTime = setTimeout(() => {
@@ -126,6 +124,7 @@ export default {
                 })
                 if (this.mouseTime != -1) {
                     clearTimeout(this.mouseTime)
+                    this.mouseTime = -1
                 }
                 this.mouseTime = setTimeout(() => {
                     this.mouseMessage = ''
@@ -147,6 +146,7 @@ export default {
         window.electron.ipcRenderer.on('keyboard-status', (_sender, arg) => {
             if (this.keyboardTime != -1) {
                 clearTimeout(this.keyboardTime)
+                this.keyboardTime = -1
             }
 
             this.keyboardTime = setTimeout(() => {
@@ -158,6 +158,7 @@ export default {
                 })
                 if (this.keyboardTime != -1) {
                     clearTimeout(this.keyboardTime)
+                    this.keyboardTime = -1
                 }
                 this.keyboardTime = setTimeout(() => {
                     this.keyboardMessage = ''
@@ -180,6 +181,7 @@ export default {
             this.lastApplicationStatus = arg
             if (this.applicationTime != -1) {
                 clearTimeout(this.applicationTime)
+                this.applicationTime = -1
             }
 
             this.applicationTime = setTimeout(() => {
@@ -195,15 +197,29 @@ export default {
 
         // 定时姿态切换
         setInterval(() => {
-            const length = expressionData.length
+            let length = expressionData.length
             let random = Math.floor(Math.random() * length)
+            if (enableWalking) length--;
+
+            if (random == length) {
+                this.isWalking = true;
+                this.startWalk();
+            }
+            else {
+                this.isWalking = false;
+                if (this.walkTime != -1) {
+                    clearInterval(this.walkTime);
+                    this.walkTime = -1;
+                }
+            }
+
             if (random == length - 1) window.hijackedMode.resetExpression();
-            else window.hijackedMode.expression(random);
+            else if (random < length - 1) window.hijackedMode.expression(random);
             this.expressionMessage = expressionData[random].messages[Math.floor(Math.random() * expressionData[random].messages.length)]
             setTimeout(() => {
                 this.expressionMessage = ''
             }, 8000)
-        }, 145 * 1000)
+        }, 10 * 1000)
     },
     methods: {
         readyMove() {
@@ -217,12 +233,35 @@ export default {
         getTimeMessage() {
             let nowTime = new Date()
             let nowHour = nowTime.getHours()
-            // console.log(timeData)
+
             timeData.forEach((item) => {
                 if (nowHour >= item.time[0] && nowHour < item.time[1]) {
                     this.timeMessage = item.messages[Math.floor(Math.random() * item.messages.length)]
                 }
             })
+        },
+        startWalk() {
+            let index = 0
+            this.walkTime = setInterval(() => {
+                if (index == 0) {
+                    window.hijackedMode.expression(4);
+                }
+                else {
+                    window.hijackedMode.expression(5);
+                    setTimeout(() => {
+                        this.walkWindow();
+                    }, 300)
+                }
+                index = (index + 1) % 2;
+            }, 500)
+        },
+        walkWindow() {
+            window.electron.ipcRenderer.send('windowWalk', this.walkDirection);
+            this.walkSteps++;
+            if (this.walkSteps >= 10) {
+                this.walkDirection = (this.walkDirection + 1) % 4;
+                this.walkSteps = 0;
+            }
         }
     },
     computed: {

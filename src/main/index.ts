@@ -97,6 +97,7 @@ class KeyboardMonitor extends EventEmitter {
         });
     }
 }
+
 class ApplicationMonitor extends EventEmitter {
     timer: any
     lasttime: number
@@ -200,6 +201,45 @@ const getWH = () => {
     return { width, height }
 }
 
+const windowWalk = (arg) => {
+    // 获取窗口的位置和尺寸
+    let [window_x, window_y] = mainWindow.getPosition();
+    let { width: windowWidth, height: windowHeight } = getWH()
+
+    // 获取最接近窗口的显示器
+    let display = screen.getDisplayNearestPoint({ x: window_x, y: window_y });
+
+    // 获取显示器的尺寸和位置（包括系统占用的区域）
+    let { x: displayX, y: displayY, width: displayWidth, height: displayHeight } = display.bounds;
+    // console.log(display.scaleFactor)
+    // 根据 arg 的值向不同的方向移动
+    switch (arg) {
+        case 0: // 上
+            if (window_y - 1 >= displayY || window_y > displayY) {
+                window_y -= display.scaleFactor;
+            }
+            break;
+        case 1: // 下
+            if (window_y + windowHeight + 1 <= displayY + displayHeight || window_y + windowHeight < displayY + displayHeight) {
+                window_y += display.scaleFactor;
+            }
+            break;
+        case 2: // 左
+            if (window_x - 1 >= displayX || window_x > displayX) {
+                window_x -= display.scaleFactor;
+            }
+            break;
+        case 3: // 右
+            if (window_x + windowWidth + 1 <= displayX + displayWidth || window_x + windowWidth < displayX + displayWidth) {
+                window_x += display.scaleFactor;
+            }
+            break;
+    }
+
+    // 更新窗口的位置
+    mainWindow.setBounds({ x: Math.round(window_x), y: Math.round(window_y), width: windowWidth, height: windowHeight });
+}
+
 function createWindow(): void {
     // Create the browser window.
     let { width, height } = getWH()
@@ -226,9 +266,11 @@ function createWindow(): void {
     mainWindow.setMenu(null);
     mainWindow.setMenuBarVisibility(false);
     mainWindow.webContents.setZoomFactor(factor);
-    mainWindow.on('ready-to-show', () => {
+    mainWindow.once('ready-to-show', () => {
+        console.log("ready-to-show")
         mainWindow.setIgnoreMouseEvents(true, { forward: true })
         mainWindow.show()
+
         mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
         mainWindow.setSkipTaskbar(true);
         mainWindow.on('hide', () => {
@@ -324,6 +366,11 @@ function createWindow(): void {
         });
         applicationMonitor.start();
         if (is.dev) mainWindow.webContents.openDevTools({ mode: 'detach' })
+
+        ipcMain.on('windowWalk', (_event, arg) => {
+            // console.log("trigger")
+            windowWalk(arg)
+        })
     })
 
     mainWindow.webContents.setWindowOpenHandler((details) => {
