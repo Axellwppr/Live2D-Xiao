@@ -219,7 +219,7 @@ export default {
             setTimeout(() => {
                 this.expressionMessage = ''
             }, 8000)
-        }, 10 * 1000)
+        }, 145 * 1000)
     },
     methods: {
         readyMove() {
