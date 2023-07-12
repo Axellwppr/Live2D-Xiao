@@ -7,6 +7,7 @@ class settingsManager {
 
     constructor() {
         const userDataPath = (app).getPath('userData');
+        console.log(userDataPath)
         this.db = new JSONdb(path.join(userDataPath, 'settings.json'), {
             asyncWrite: true
         });
@@ -26,6 +27,14 @@ class settingsManager {
 
     setScale(scale: "large" | "small" | "normal"): void {
         this.db.set('scale', scale);
+    }
+
+    getPosition(): { x: number, y: number } {
+        return this.db.get('position') || { x: -1, y: -1 };
+    }
+
+    setPosition(x: number, y: number): void {
+        this.db.set('position', { x, y });
     }
 }
 
