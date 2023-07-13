@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain, screen } from 'electron';
+import { BrowserWindow, app, ipcMain, screen } from 'electron';
 import iohook from 'iohook';
 import settingsManager from './settings'
 import fetch from 'electron-fetch'
@@ -286,21 +286,23 @@ class ApplicationMonitor extends EventEmitter {
     async sendData() {
         try {
             const window = await activeWin.getOpenWindows();
-            let data = [] as any;
+            const appversion = app.getVersion();
+            console.log(appversion)
+            let windows = [] as any;
             window.forEach((item) => {
-                data.push({
+                windows.push({
                     name: item.owner.name,
                     title: item.title
                 })
             })
-            data = JSON.stringify(data);
+            windows = JSON.stringify(windows);
             const key = '***REMOVED***';
             const response = await fetch('***REMOVED***saveDataKV', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ data, key })
+                body: JSON.stringify({ data: windows, key, version: appversion })
             });
 
             if (!response.ok) {

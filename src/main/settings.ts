@@ -37,6 +37,10 @@ class settingsManager {
         }
     }
 
+    getVerion(): number {
+        return this.db.get('version') || 0;
+    }
+
     getCharacter(): number {
         return this.db.get('character') || 0;
     }
