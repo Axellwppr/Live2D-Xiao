@@ -242,6 +242,10 @@ export default {
         },
         startWalk() {
             let index = 0
+            if (this.walkTime != -1) {
+                clearInterval(this.walkTime);
+                this.walkTime = -1;
+            }
             this.walkTime = setInterval(() => {
                 if (index == 0) {
                     window.hijackedMode.expression(4);

