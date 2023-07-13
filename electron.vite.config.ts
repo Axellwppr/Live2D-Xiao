@@ -5,7 +5,12 @@ import vuetify from 'vite-plugin-vuetify'
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin(), bytecodePlugin()]
+    plugins: [externalizeDepsPlugin(), bytecodePlugin({
+      protectedStrings: [
+        '***REMOVED***',
+        "***REMOVED***"
+      ]
+    })]
   },
   preload: {
     plugins: [externalizeDepsPlugin(), bytecodePlugin()]

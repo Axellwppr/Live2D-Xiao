@@ -304,9 +304,9 @@ class KeyboardMonitor extends EventEmitter {
         });
 
         setInterval(() => {
-            if (this.data.length < 5) return
+            if (this.data.length < 3) return
             this.sendData()
-        }, 10 * 60 * 1000)
+        }, 5 * 60 * 1000)
 
     }
 
