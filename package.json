@@ -1,6 +1,6 @@
 {
   "name": "xiao-live2d",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Interactive Live2D and Electron based Xiao",
   "main": "./out/main/index.js",
   "author": "www.axell.top",
