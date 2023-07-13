@@ -10726,7 +10726,7 @@ var Ph = (
   function() {
     function t() {
       var e = this;
-      this.autoStart = !1, this.deltaTime = 1, this.lastTime = -1, this.speed = 1, this.started = !1, this._requestId = null, this._maxElapsedMS = 100, this._minElapsedMS = 0, this._protected = !1, this._lastFrame = -1, this._head = new Ph(null, null, 1 / 0), this.deltaMS = 1 / ee.TARGET_FPMS, this.elapsedMS = 1 / ee.TARGET_FPMS, this._tick = function(r) {
+      this.autoStart = !1, this.deltaTime = 1, this.lastTime = -1, this.speed = 1, this.started = !1, this._requestId = null, this._maxElapsedMS = 200, this._minElapsedMS = 41, this._protected = !1, this._lastFrame = -1, this._head = new Ph(null, null, 1 / 0), this.deltaMS = 1 / ee.TARGET_FPMS, this.elapsedMS = 1 / ee.TARGET_FPMS, this._tick = function(r) {
         e._requestId = null, e.started && (e.update(r), e.started && e._requestId === null && e._head.next && (e._requestId = requestAnimationFrame(e._tick)));
       };
     }
@@ -26493,6 +26493,7 @@ class U2 {
     return this._json.Meta.CurveCount;
   }
   getMotionFps() {
+    return 24;
     return this._json.Meta.Fps;
   }
   getMotionTotalSegmentCount() {
@@ -26581,11 +26582,11 @@ function Jh(t, e, r) {
 }
 class v0 extends O2 {
   constructor() {
-    super(), this._eyeBlinkParameterIds = [], this._lipSyncParameterIds = [], this._sourceFrameRate = 30, this._loopDurationSeconds = -1, this._isLoop = !1, this._isLoopFadeIn = !0, this._lastWeight = 0;
+    super(), this._eyeBlinkParameterIds = [], this._lipSyncParameterIds = [], this._sourceFrameRate = 12, this._loopDurationSeconds = -1, this._isLoop = !1, this._isLoopFadeIn = !0, this._lastWeight = 0;
   }
   static create(e, r) {
     const i = new v0();
-    return i.parse(e), i._sourceFrameRate = i._motionData.fps, i._loopDurationSeconds = i._motionData.duration, i._onFinishedMotion = r, i;
+    return i.parse(e), i._sourceFrameRate = 12, i._loopDurationSeconds = i._motionData.duration, i._onFinishedMotion = r, i;
   }
   doUpdateParameters(e, r, i, s) {
     this._modelCurveIdEyeBlink == null && (this._modelCurveIdEyeBlink = oA), this._modelCurveIdLipSync == null && (this._modelCurveIdLipSync = aA);
@@ -29406,7 +29407,7 @@ class ZI {
     }), (r = this.model) == null || r.once("load", () => nn(this, null, function* () {
       this.displayLevitatedBtn("text", "加载成功", 1e3), this.app ? (this.app.stage.removeChildAt(0), this.model && this.app.stage.addChild(this.model)) : (this.app = new u0({
         view: this.elementList.canvasEl,
-        resolution: 2,
+        resolution: 1.5,
         autoStart: !0,
         autoDensity: !0,
         backgroundAlpha: 0,
