@@ -8,6 +8,21 @@ import { WindowDragger, getFactor, getWH, settings, MouseMonitor, KeyboardMonito
 
 let mainWindow
 
+app.commandLine.appendSwitch("--disable-http-cache");
+
+//单实例运行
+if (!app.requestSingleInstanceLock()) {
+    app.quit()
+} else {
+    app.on('second-instance', () => {
+        if (mainWindow) {
+            if (mainWindow.isMinimized()) mainWindow.restore();
+            mainWindow.focus();
+            mainWindow.show();
+        }
+    })
+}
+
 function createWindow(): void {
     // Create the browser window.
     let { width, height } = getWH()
@@ -193,7 +208,7 @@ async function createTray() {
 }
 
 app.whenReady().then(async () => {
-    electronApp.setAppUserModelId('top.axell.xiao')
+    electronApp.setAppUserModelId('Xiao')
     app.on('browser-window-created', (_, window) => {
         optimizer.watchWindowShortcuts(window)
     })

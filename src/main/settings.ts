@@ -2,6 +2,8 @@ import { app } from 'electron';
 import JSONdb from 'simple-json-db';
 import * as path from 'path';
 
+import { electronApp } from '@electron-toolkit/utils'
+
 class settingsManager {
     private db: JSONdb;
 
@@ -11,6 +13,28 @@ class settingsManager {
         this.db = new JSONdb(path.join(userDataPath, 'settings.json'), {
             asyncWrite: true
         });
+
+        if (this.db.get('version') == undefined) {
+            console.log("upgrade from 0 to 1")
+            try {
+                electronApp.setAppUserModelId('com.electron')
+                const setAutoLaunch = (val) => {
+                    const ex = process.execPath;
+                    app.setLoginItemSettings({
+                        openAtLogin: val,
+                        path: ex,
+                        args: ['--autoLaunch']
+                    });
+                }
+                setAutoLaunch(false)
+                electronApp.setAppUserModelId('Xiao')
+            } catch (e) {
+                console.log(e)
+                return
+            }
+            this.db.set('version', 1);
+            console.log("upgrade from 0 to 1 OK")
+        }
     }
 
     getCharacter(): number {
