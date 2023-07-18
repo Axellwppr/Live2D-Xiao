@@ -4,11 +4,12 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import iohook from 'iohook'
 import { nativeImage } from 'electron'
 import appIcon from '../../build/icon.ico?asset'
-import { WindowDragger, getFactor, getWH, settings, MouseMonitor, KeyboardMonitor, ApplicationMonitor, WindowManager } from './utils'
+import { MouseHooker, getFactor, getWH, settings, MouseMonitor, KeyboardMonitor, ApplicationMonitor, WindowManager } from './utils'
 
 let mainWindow
 
 app.commandLine.appendSwitch("--disable-http-cache");
+app.commandLine.appendSwitch('no-proxy-server')
 
 //单实例运行
 if (!app.requestSingleInstanceLock()) {
@@ -67,6 +68,24 @@ function createWindow(): void {
         mainWindow.center();
     }
 
+    //保存&恢复窗体透明度
+    let transparent: 0 | 1 | 2 = settings.getTransparent();
+    const changeTransparent = (transparent: 0 | 1 | 2) => {
+        if (transparent === 0) {
+            mainWindow.setOpacity(1)
+        } else if (transparent === 1) {
+            mainWindow.setOpacity(0.7)
+        } else {
+            mainWindow.setOpacity(0.4)
+        }
+    }
+    ipcMain.on('switch-visibility', () => {
+        transparent = (transparent + 1) % 3 as 0 | 1 | 2
+        settings.setTransparent(transparent)
+        changeTransparent(transparent)
+    })
+    changeTransparent(transparent)
+
     mainWindow.setMenu(null);
     mainWindow.setMenuBarVisibility(false);
     mainWindow.webContents.setZoomFactor(factor);
@@ -101,7 +120,7 @@ function createWindow(): void {
         // monitor
         iohook.start();
 
-        const windowDragger = new WindowDragger(mainWindow);
+        const windowDragger = new MouseHooker(mainWindow);
         windowDragger.start();
 
         const mouseMonitor = new MouseMonitor();
@@ -178,16 +197,17 @@ async function createTray() {
         mainWindow.webContents.setZoomFactor(factor);
     }
     let sizeContext = [] as any
-    ([{ label: '较大', scale: 'large' }, { label: '正常', scale: 'normal' }, { label: '较小', scale: 'small' }]).forEach(item => {
-        sizeContext.push({
-            label: item.label,
-            click: () => {
-                changeScale(item.scale)
-            },
-            type: 'radio',
-            checked: currentSize === item.scale
+    ([{ label: "超大", scale: 'xlarge' }, { label: '较大', scale: 'large' }, { label: '正常', scale: 'normal' }, { label: '较小', scale: 'small' }, { label: '超小', scale: 'xsmall' }])
+        .forEach(item => {
+            sizeContext.push({
+                label: item.label,
+                click: () => {
+                    changeScale(item.scale)
+                },
+                type: 'radio',
+                checked: currentSize === item.scale
+            })
         })
-    })
 
     // create context menu
     const contextMenu = Menu.buildFromTemplate([{

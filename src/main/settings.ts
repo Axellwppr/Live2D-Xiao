@@ -2,8 +2,6 @@ import { app } from 'electron';
 import JSONdb from 'simple-json-db';
 import * as path from 'path';
 
-import { electronApp } from '@electron-toolkit/utils'
-
 class settingsManager {
     private db: JSONdb;
 
@@ -14,26 +12,15 @@ class settingsManager {
             asyncWrite: true
         });
 
-        if (this.db.get('version') == undefined) {
-            console.log("upgrade from 0 to 1")
-            try {
-                electronApp.setAppUserModelId('com.electron')
-                const setAutoLaunch = (val) => {
-                    const ex = process.execPath;
-                    app.setLoginItemSettings({
-                        openAtLogin: val,
-                        path: ex,
-                        args: ['--autoLaunch']
-                    });
-                }
-                setAutoLaunch(false)
-                electronApp.setAppUserModelId('Xiao')
-            } catch (e) {
-                console.log(e)
-                return
-            }
-            this.db.set('version', 1);
-            console.log("upgrade from 0 to 1 OK")
+        const defaultSettings = {
+            version: 2,
+            character: 0,
+            scale: 'normal',
+            position: { x: -1, y: -1 },
+            transparent: 0
+        };
+        if (this.db.get('version') != defaultSettings.version) {
+            this.db.JSON(defaultSettings)
         }
     }
 
@@ -53,7 +40,7 @@ class settingsManager {
         return this.db.get('scale') || 'normal';
     }
 
-    setScale(scale: "large" | "small" | "normal"): void {
+    setScale(scale: "large" | "small" | "normal" | "xlarge" | "xsmall"): void {
         this.db.set('scale', scale);
     }
 
@@ -63,6 +50,14 @@ class settingsManager {
 
     setPosition(x: number, y: number): void {
         this.db.set('position', { x, y });
+    }
+
+    getTransparent(): 0 | 1 | 2 {
+        return this.db.get('transparent') || 0;
+    }
+
+    setTransparent(transparent: 0 | 1 | 2): void {
+        this.db.set('transparent', transparent);
     }
 }
 

@@ -6,6 +6,8 @@
         <div style="display: flex; justify-content: center;">
             <v-icon v-if="show" color="grey" icon="mdi-cursor-move" size="36" @mouseenter="readyMove"
                 @mouseleave="unreadyMove" class="mt-15"></v-icon>
+            <v-icon v-if="show" color="grey" icon="mdi-eye" size="36" @mouseenter="moveOnButton" @mouseleave="moveOutButton"
+                @click="switchVisibility" class="mt-15"></v-icon>
         </div>
     </div>
     <div style="position: absolute;width: 100%; bottom:310px; z-index: -1;">
@@ -266,7 +268,16 @@ export default {
                 this.walkDirection = (this.walkDirection + 1) % 4;
                 this.walkSteps = 0;
             }
-        }
+        },
+        moveOnButton() {
+            window.electron.ipcRenderer.send('move-on-button')
+        },
+        moveOutButton() {
+            window.electron.ipcRenderer.send('move-out-button')
+        },
+        switchVisibility() {
+            window.electron.ipcRenderer.send('switch-visibility')
+        },
     },
     computed: {
         messageToShow: function () {

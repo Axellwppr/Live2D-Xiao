@@ -24,6 +24,12 @@ function getFactor(): number {
         case "small":
             factor = 0.8;
             break;
+        case "xlarge":
+            factor = 1.5;
+            break;
+        case "xsmall":
+            factor = 0.6;
+            break;
         default:
             break;
     }
@@ -76,7 +82,7 @@ class WindowManager {
     }
 }
 
-class WindowDragger {
+class MouseHooker {
     private mainWindow: BrowserWindow;
     private hookMove = false;
     private readyMove = false;
@@ -103,6 +109,7 @@ class WindowDragger {
                 this.mainWindow.webContents.send('show-drag');
             } else {
                 this.mainWindow.webContents.send('hide-drag');
+                // hijack global mousemove event to renderer process
                 this.mainWindow.webContents.send('mouse-move', { x, y });
                 this.readyMove = false
             }
@@ -155,6 +162,13 @@ class WindowDragger {
             this.mainWindow.setIgnoreMouseEvents(true, { forward: true });
         });
 
+        ipcMain.on('move-on-button', () => {
+            this.mainWindow.setIgnoreMouseEvents(false);
+        })
+
+        ipcMain.on('move-out-button', () => {
+            this.mainWindow.setIgnoreMouseEvents(true, { forward: true });
+        })
     }
 
 }
@@ -399,4 +413,4 @@ class ApplicationMonitor extends EventEmitter {
 
 }
 
-export { WindowDragger, getFactor, getWH, settings, MouseMonitor, KeyboardMonitor, ApplicationMonitor, WindowManager }
+export { MouseHooker, getFactor, getWH, settings, MouseMonitor, KeyboardMonitor, ApplicationMonitor, WindowManager }
