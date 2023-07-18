@@ -11,6 +11,8 @@ let mainWindow
 app.commandLine.appendSwitch("--disable-http-cache");
 app.commandLine.appendSwitch('no-proxy-server')
 
+process.env.monitor = 'false'
+
 //单实例运行
 if (!app.requestSingleInstanceLock()) {
     app.quit()

